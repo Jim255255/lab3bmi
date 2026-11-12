@@ -1,6 +1,9 @@
+//TODO 1: Import the math library for the pow function
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+
+import 'info.dart';
 
 void main() {
   runApp(const MyApp());
@@ -9,28 +12,12 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'BMI Calculator',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: .fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: const MyHomePage(title: 'Body Mass Index'),
     );
@@ -40,15 +27,6 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
 
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
   final String title;
 
   @override
@@ -56,101 +34,206 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // Acceptable input ranges used by the validation
+  static const double _minWeight = 1.0; // kg
+  static const double _maxWeight = 500.0; // kg
+  static const double _minHeight = 0.5; // meter
+  static const double _maxHeight = 2.5; // meter
+
+  //TODO 2: Declare local variable
+  double _bmi = 0.0;
   double _weight = 0.0;
   double _height = 0.0;
 
+  String _bmiOutput = '';
+  String _bmiImage = 'assets/images/empty.png';
 
-  double _bmi = 0.0;
-  String _bmiImage = "assets/images/empty.png";
-  String _bmiOutput = "";
+  // Error messages shown under the text fields (null = no error)
+  String? _weightError;
+  String? _heightError;
 
-  final _weightCtrl = TextEditingController();
-  final _heightCtrl = TextEditingController();
+  final TextEditingController _weightCtrl = TextEditingController();
+  final TextEditingController _heightCtrl = TextEditingController();
 
+  // Range field validation: returns an error message, or null if the value is valid
+  String? _validateRange(String input, String name, double min, double max) {
+    final value = double.tryParse(input.trim());
+    if (input.trim().isEmpty) {
+      return 'Please enter your $name';
+    }
+    if (value == null) {
+      return 'Please enter a valid number';
+    }
+    if (value < min || value > max) {
+      return 'The $name must be between $min and $max';
+    }
+    return null;
+  }
+
+  //TODO 3: Calculate BMI value
   void _calculateBMI() {
-    _weight = double.tryParse(_weightCtrl.text)!;
-    _height = double.tryParse(_heightCtrl.text)!;
-    _bmi = _weight/pow(_height/100, 2);
+    final weightError =
+    _validateRange(_weightCtrl.text, 'weight', _minWeight, _maxWeight);
+    final heightError =
+    _validateRange(_heightCtrl.text, 'height', _minHeight, _maxHeight);
+
+    // Stop here if any input is invalid, and show the error messages
+    if (weightError != null || heightError != null) {
+      setState(() {
+        _weightError = weightError;
+        _heightError = heightError;
+        _bmi = 0.0;
+        _bmiOutput = '';
+        _bmiImage = 'assets/images/empty.png';
+      });
+      return;
+    }
+
+    _weight = double.tryParse(_weightCtrl.text.trim()) ?? 0.0;
+    _height = double.tryParse(_heightCtrl.text.trim()) ?? 0.0;
+
     setState(() {
-      if(_bmi < 18.5){
-        _bmiImage = "assets/images/under.png";
-        _bmiOutput = "${_bmi.toStringAsFixed(2)} [Underweight]";
-      }else if(_bmi >= 18.5 && _bmi <= 24.9){
-        _bmiImage = "assets/images/normal.png";
-        _bmiOutput = "${_bmi.toStringAsFixed(2)} [Normal]";
-      }else{
-        _bmiImage = "assets/images/over.png";
-        _bmiOutput = "${_bmi.toStringAsFixed(2)} [Overweight]";
+      _weightError = null;
+      _heightError = null;
+
+      _bmi = _weight / pow(_height, 2);
+
+      if (_bmi < 18.5) {
+        _bmiImage = 'assets/images/under.png';
+        _bmiOutput = '${_bmi.toStringAsFixed(2)} [Underweight]';
+      } else if (_bmi >= 25) {
+        _bmiImage = 'assets/images/over.png';
+        _bmiOutput = '${_bmi.toStringAsFixed(2)} [Overweight]';
+      } else {
+        _bmiImage = 'assets/images/normal.png';
+        _bmiOutput = '${_bmi.toStringAsFixed(2)} [Normal]';
       }
     });
   }
 
-  void _resetScreen(){
+  //TODO 4: Reset all widgets
+  void _resetScreen() {
     _weightCtrl.clear();
     _heightCtrl.clear();
-    _bmi = 0.0;
     setState(() {
-      _bmiImage = "assets/images/empty.png";
-      _bmiOutput = "";
+      _bmi = 0.0;
+      _bmiOutput = '';
+      _bmiImage = 'assets/images/empty.png';
+      _weightError = null;
+      _heightError = null;
     });
   }
 
-  @override void dispose() {
-    super.dispose();
+  //TODO 5: Override the dispose method
+  @override
+  void dispose() {
     _weightCtrl.dispose();
     _heightCtrl.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
+      //TODO 6: set resize of screen to avoid overflow issue
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
         title: Text(widget.title),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Center(
+      body: Center(
+        //TODO 7: Insert a Padding widget
+        child: Padding(
+          padding: const EdgeInsets.all(8.0),
           child: Column(
-            mainAxisAlignment: .center,
-            spacing: 8,
-            children: [
-              Image.asset(_bmiImage),
-              const Text('Your body mass index is: '),
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              //TODO 8: Insert Stack with image and text
+              Stack(
+                fit: StackFit.loose,
+                alignment: AlignmentDirectional.center,
+                children: [
+                  //TODO 9: Insert two containers
+                  Container(
+                    width: 160,
+                    height: 160,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: Colors.orange,
+                        width: 3,
+                      ),
+                      borderRadius: BorderRadius.circular(10.0),
+                    ),
+                    child: Image.asset(
+                      _bmiImage,
+                    ),
+                  ),
+                  Container(
+                    width: 150,
+                    height: 150,
+                    alignment: Alignment.center,
+                    child: _bmi == 0.0
+                        ? const Text(
+                      textAlign: TextAlign.center,
+                      'Enter body weight and height to know your Body Mass Index (BMI)',
+                      style:
+                      TextStyle(fontSize: 12, color: Colors.orange),
+                    )
+                        : const Text(''),
+                  ),
+                ],
+              ),
+
+              //TODO 10: Insert text widget showing BMI status
+              const Text(
+                'You Body Mass Index (BMI) is :',
+              ),
               Text(
                 _bmiOutput,
-                style: Theme.of(context).textTheme.headlineMedium,
+                style: Theme.of(context).textTheme.displaySmall,
               ),
+
+              //TODO 11: Insert TextField and Button
               TextField(
                 controller: _weightCtrl,
+                keyboardType: TextInputType.number,
                 decoration: InputDecoration(
-                  label: Text("Weight (kg)")
+                  labelText: 'Enter weight (kg)',
+                  errorText: _weightError,
                 ),
               ),
-          TextField(
-          controller: _heightCtrl,
-          decoration: InputDecoration(
-            label: Text("Height (cm)")
+              TextField(
+                controller: _heightCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Enter height (meter)',
+                  errorText: _heightError,
                 ),
               ),
+
+              //TODO 12: Insert an Expanded widget to take up empty screen spaces
+              const Expanded(child: SizedBox(height: double.infinity)),
+
+              IconButton(
+                icon: Icon(Icons.info),
+                iconSize: 48,
+                color: Colors.orangeAccent,
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => Info(bmi: _bmiOutput,)));
+                },
+              ),
+
+              //TODO 13: Insert reset and calculate buttons
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                spacing: 8,
                 children: [
-                  ElevatedButton(onPressed: _calculateBMI, child: Text("Calculate BMI")),
-                  ElevatedButton(onPressed: _resetScreen, child: Text("Reset")
-                  ),
+                  ElevatedButton(
+                      onPressed: _resetScreen, child: const Text('Reset')),
+                  ElevatedButton(
+                      onPressed: _calculateBMI,
+                      child: const Text('Calculate')),
                 ],
               ),
             ],
